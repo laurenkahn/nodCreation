@@ -46,7 +46,7 @@ leftButton=91;
 rightButton=94;
 
 % Specify where the systematicWrongButtons file lives:
-buttonRuleExceptions = dlmread([DIR.dataRepo '/info/systematicWrongButtons_' task '.txt'],'\t');
+buttonRuleExceptions = dlmread([DIR.dataRepo '/info/systematicWrongButtons.txt'],'\t');
 
 % Some versions of the SST set up the Seeker variable differently.
 % The script should tell you which columns are which and what different
@@ -81,7 +81,6 @@ else
         subjectCode = [studyCode placeholder num2str(s)];
         
         for r=runs % For runs defined previously (scanning only here)
-            rIdx = find(runs==r); % Sometimes we want r=13, sometimes we want rIdx=3.
             dataFile = [DIR.data filesep studyCode '_sub' num2str(s) '_run' num2str(r) '.mat'];
             if exist(dataFile)
                 load(dataFile)  % Load .mat
@@ -178,8 +177,8 @@ else
                 durations = durations(~currentCondsRemoved);
                 
                 % Insert list of condsRemoved for this run into condsRemoved variable *LEK
-                startCol = 1 + (rIdx-1)*standardCondsPerRun;
-                endCol = rIdx*standardCondsPerRun;
+                startCol = 1 + (r-1)*standardCondsPerRun;
+                endCol = r*standardCondsPerRun;
                 condsRemoved(s,startCol:endCol) = currentCondsRemoved;
                 
                 DIR.nods = [DIR.dataRepo 'names_onsets_durations/' task filesep analysis filesep];
