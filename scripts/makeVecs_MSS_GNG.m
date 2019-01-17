@@ -13,9 +13,9 @@ standardNames = {'baseline' 'correct_risk_go' 'correct_risk_nogo' 'correct_neutr
 standardCondsPerRun = length(standardNames);
 
 % Import sub x cond matrix specifying removed conditions
-DIR.condsRemoved = '~/Desktop/flexibleConCreation/conInfo/'; % CHANGE THIS
+DIR.condsRemoved = [DIR.dataRepo filesep 'info/']; 
 condsRemovedFile = [DIR.condsRemoved filesep 'condsRemoved_' task '_' analysis '.txt'];
-DIR.runsRemoved = [DIR.dataRepo '/info/']; 
+DIR.runsRemoved = [DIR.dataRepo filesep 'info/']; 
 runsRemovedFile = [DIR.runsRemoved filesep 'runsRemoved_' task '_' analysis '.txt'];
 
 runsRemovedMat = dlmread(runsRemovedFile,'\t');
