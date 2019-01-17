@@ -15,7 +15,7 @@ standardCondsPerRun = length(standardNames);
 % Import sub x cond matrix specifying removed conditions
 DIR.condsRemoved = '~/Desktop/flexibleConCreation/conInfo/'; % CHANGE THIS
 condsRemovedFile = [DIR.condsRemoved filesep 'condsRemoved_' task '_' analysis '.txt'];
-DIR.runsRemoved = [DIR.dataRepo '/info/'; 
+DIR.runsRemoved = [DIR.dataRepo '/info/']; 
 runsRemovedFile = [DIR.runsRemoved filesep 'runsRemoved_' task '_' analysis '.txt'];
 
 runsRemovedMat = dlmread(runsRemovedFile,'\t');
@@ -48,13 +48,11 @@ else
                 sprintf('sub %d run %d excluded',s,r)
             else
                 
-                fileName = dir(['*' subject_code '*' task num2str(r) '*.mat']);
-                if size(fileName,1)>1
-                    warning('More than 1 data file found for sub %d run %d',s,r)
-                elseif size(fileName,1)==0
-                    warning('No data file found for sub %d run %d',s,r)
+                dataFile = [DIR.data filesep subject_code '_' task num2str(r) '.mat'];
+                if ~(exist(dataFile)==2)
+                    warning('No data file found for sub %d run %d',s,r)    
                 else
-                    load(fileName.name)
+                    load(dataFile)
                     
                     % Reassign tags based on correct/incorrect button press
                     for i = 1:length(run_info.responses)
@@ -87,7 +85,7 @@ else
                         onsets{c} = run_info.onsets(currentIndices);
                         durations{c} = run_info.durations(currentIndices);
                     end
-                    save(fileName.name, 'key_presses', 'run_info')
+                    save(dataFile, 'key_presses', 'run_info')
                     
                     % Determine which conditions to remove *LEK
                     currentCondsRemoved = cellfun('isempty',onsets);
@@ -102,7 +100,7 @@ else
                     endCol = r*standardCondsPerRun;
                     condsRemoved(s,startCol:endCol) = currentCondsRemoved;
                     
-                    DIR.nods = [DIR.dataRepo 'names_onsets_durations/' task filesep analysis filesep];
+                    DIR.nods = [DIR.dataRepo filesep 'names_onsets_durations/' task filesep analysis filesep];
                     if exist(DIR.nods)==7 %do nothing
                     else mkdir(DIR.nods)
                     end
@@ -115,3 +113,5 @@ end
 
 % Export matrix of condsRemoved all subs, all runs *LEK
 dlmwrite(condsRemovedFile,condsRemoved,'delimiter','\t');
+
+clear
