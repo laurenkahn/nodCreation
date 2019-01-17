@@ -1,20 +1,54 @@
-studyFolder = '~/Desktop/REV_scripts/behavioral/REV_SST/';
-cd([studyFolder '/output/analysisReady/'])
-numSubs = 144;
-% numRuns = 4;
+% INPUT:
+% systematicWrongButtons.txt specifying what wrong buttons subjects used systematically
+% runsRemoved_task_analysis.txt specifying which runs should be excluded for which subjects
+
+% OUTPUT:
+% "nods" files - names, onsets, durations files - for use in first-level fMRI models
+% condsRemoved_task_analysis.txt specifying which conds do not exist, for
+% each run, for each subject. For integration with the flexibleConCreation
+% repo
+
+studyCode = 'REV'; % You'll use this in your analysisReady data filenames
+firstSub = 1;
+lastSub = 144;
 runs = [1 2 13 14];
-repodir = '~/Desktop/REV_BxData/'; %edit this path for your local computer
-exclude = [];
-task = 'sst'; % *LEK
-analysis = 'basic'; % *LEK
+
+task = 'sst';
+analysis = 'prepost_analysis';
+
+DIR.dataRepo = ['~/Desktop/REV_BxData/']; % Edit this path
+DIR.data = [DIR.dataRepo '/data/' task]; %
+
+% List names of all conditions, assuming all exist
+% Note: FailedGo is a trash condition; includes both incorrect gos and failed gos (misses)
+standardNames = {'CorrectGo' 'CorrectStop' 'FailedStop' 'Cue' 'FailedGo'};
+standardCondsPerRun = length(standardNames);
+
+% Import sub x cond matrix specifying removed conditions
+DIR.condsRemoved = '~/Desktop/flexibleConCreation/conInfo/'; % CHANGE THIS
+condsRemovedFile = [DIR.condsRemoved filesep 'condsRemoved_' task '_' analysis '.txt'];
+DIR.runsRemoved = [DIR.dataRepo '/info/'];
+runsRemovedFile = [DIR.runsRemoved filesep 'runsRemoved_' task '_' analysis '.txt'];
+% For testing only: 
+% runsRemovedFile = [DIR.runsRemoved filesep 'runsRemoved_gng_' analysis '.txt'];
+
+runsRemovedMat = dlmread(runsRemovedFile,'\t');
+
+% Initialize condsRemoved variable (to be edited + exported later)
+nSubs = lastSub-firstSub+1;
+nRuns = length(runs);
+nCols = nRuns*standardCondsPerRun;
+condsRemoved = nan(nSubs,nCols);
+
+% SPECIFY SST KEYS AND COLUMNS
 
 % These two codes should reflect what's in the response column of the Seeker variable
 % You'll specify exceptions to this rule below
 leftButton=91;
 rightButton=94;
-studyPrefix='REV'; % You'll use this in your analysisReady data filenames
 
-buttonRuleExceptions = dlmread([studyFolder '/info/systematicWrongButtons.txt'],'\t');
+% Specify where the systematicWrongButtons file lives:
+buttonRuleExceptions = dlmread([DIR.dataRepo '/info/systematicWrongButtons.txt'],'\t');
 
 % Some versions of the SST set up the Seeker variable differently.
 % The script should tell you which columns are which and what different
@@ -30,29 +64,14 @@ stopCode=1;
 leftCode=0;
 rightCode=1;
 arrowLength=1;
-numRuns = length(runs);
-
-% List names of all conditions, assuming all exist *LEK
-standardNames = {'CorrectGo' 'CorrectStop' 'FailedStop' 'Cue' 'FailedGo'};  
-% FailedGo is a trash condition; includes both incorrect gos and failed gos (misses)
-standardCondsPerRun = length(standardNames);
-
-% Import sub x cond matrix specifying removed conditions *LEK
-DIR.condsRemoved = '~/Desktop/flexibleConCreation/conInfo'; % CHANGE THIS
-condsRemovedFile = [DIR.condsRemoved filesep 'condsRemoved_' task '_' analysis '.txt'];
-
-% Initialize condsRemoved variable (to be edited + exported later) *LEK
-numCols = numRuns*standardCondsPerRun;
-condsRemoved = nan(numSubs,numCols);
 
 % Initialize variable
-FailedGoCount = nan(numSubs,numRuns);
+FailedGoCount = nan(nSubs,nRuns);
 
-for s=1:numSubs
-    
-    if find(exclude==s) % Leave excluded subject rows as NaN
-        sprintf('sub %d excluded',s)
-    else
+if ~(exist(DIR.data)==7)
+    warning('data folder not found')
+else
+    for s=firstSub:lastSub
         % Create subjectCode
         if s<10
             placeholder = '00';
@@ -61,12 +80,12 @@ for s=1:numSubs
         else placeholder = '';
         end
         
-        subjectCode = [studyPrefix placeholder num2str(s)];
+        subjectCode = [studyCode placeholder num2str(s)];
         
         for r=runs % For runs defined previously (scanning only here)
-            filename = [studyPrefix '_sub' num2str(s) '_run' num2str(r) '.mat'];
-            if exist(filename)
-                load(filename)  % Load .mat
+            dataFile = [DIR.data filesep studyCode '_sub' num2str(s) '_run' num2str(r) '.mat'];
+            if exist(dataFile)
+                load(dataFile)  % Load .mat
                 
                 % Define LEFT and RIGHT *******
                 problemSubIdx = find(buttonRuleExceptions(:,1)==s);
@@ -146,8 +165,8 @@ for s=1:numSubs
                 durations{1} = arrowLength;
                 durations{2} = arrowLength;
                 durations{3} = arrowLength;
-%                 durations{4} = nan(length(onsets{4}),1);
-%                 durations{4}(:) = .5;
+                %                 durations{4} = nan(length(onsets{4}),1);
+                %                 durations{4}(:) = .5;
                 durations{4} = cueLength(isCorrectGo|isCorrectStop|isFailedStop|isIncorrectGo);
                 durations{5} = arrowLength;
                 
@@ -163,19 +182,20 @@ for s=1:numSubs
                 startCol = 1 + (r-1)*standardCondsPerRun;
                 endCol = r*standardCondsPerRun;
                 condsRemoved(s,startCol:endCol) = currentCondsRemoved;
- 
-                fxFolder = [repodir 'names_onsets_durations/SST/'];
-                if exist(fxFolder)==7 %do nothing
-                else mkdir(fxFolder)
-                end
-                save([fxFolder 'sub-' subjectCode '_task-sst_acq-' num2str(r) '_onsets.mat'],'names','onsets','durations');
                 
-            end % file exists if 
+                DIR.nods = [DIR.dataRepo 'names_onsets_durations/' task filesep analysis filesep];
+                if exist(DIR.nods)==7 %do nothing
+                else mkdir(DIR.nods)
+                end
+                save([DIR.nods 'sub-' subjectCode '_task-sst_acq-' num2str(r) '_onsets.mat'],'names','onsets','durations');
+                
+            end % file exists if
         end % run loop
-    end % subject exclusion if
-end % subject loop
+    end % subject loop
+end % data folder exist check
 
-dlmwrite([studyFolder '/compiledResults/upTo' studyPrefix placeholder num2str(numSubs) '/initialCheck/FailedGoCount_scanning.txt'],FailedGoCount,'delimiter','\t');
+
+dlmwrite([DIR.dataRepo '/info/FailedGoCount_scanning.txt'],FailedGoCount,'delimiter','\t');
 
 % Export matrix of condsRemoved all subs, all runs *LEK
 dlmwrite(condsRemovedFile,condsRemoved,'delimiter','\t');

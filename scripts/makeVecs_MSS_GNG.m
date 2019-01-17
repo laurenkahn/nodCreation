@@ -4,18 +4,18 @@ lastSub = 144;
 
 task = 'gng';
 runs = [1 2 3 4];
-DIR.repo = ['~/Desktop/REV_BxData/']; %edit this path for your local computer
+DIR.dataRepo = ['~/Desktop/REV_BxData/']; % Edit this path 
 analysis = 'prepost_analysis';
-DIR.data = ['~/Desktop/REV_BxData/data/' task]; % *LEK
+DIR.data = [DIR.dataRepo '/data/' task];
 
-% List names of all conditions, assuming all exist *LEK
+% List names of all conditions, assuming all exist 
 standardNames = {'baseline' 'correct_risk_go' 'correct_risk_nogo' 'correct_neutral_go' 'correct_neutral_nogo' 'incorrect_risk_go' 'incorrect_risk_nogo' 'incorrect_neutral_go' 'incorrect_neutral_nogo'}; % baseline is crosshair and instructions
 standardCondsPerRun = length(standardNames);
 
-% Import sub x cond matrix specifying removed conditions *LEK
+% Import sub x cond matrix specifying removed conditions
 DIR.condsRemoved = '~/Desktop/flexibleConCreation/conInfo/'; % CHANGE THIS
 condsRemovedFile = [DIR.condsRemoved filesep 'condsRemoved_' task '_' analysis '.txt'];
-DIR.runsRemoved = '~/Desktop/nodCreation/input/'; % CHANGE THIS
+DIR.runsRemoved = [DIR.dataRepo '/info/'; 
 runsRemovedFile = [DIR.runsRemoved filesep 'runsRemoved_' task '_' analysis '.txt'];
 
 runsRemovedMat = dlmread(runsRemovedFile,'\t');
@@ -102,11 +102,11 @@ else
                     endCol = r*standardCondsPerRun;
                     condsRemoved(s,startCol:endCol) = currentCondsRemoved;
                     
-                    DIR.fx = [DIR.repo 'names_onsets_durations/' task '/'];
-                    if exist(DIR.fx)==7 %do nothing
-                    else mkdir(DIR.fx)
+                    DIR.nods = [DIR.dataRepo 'names_onsets_durations/' task filesep analysis filesep];
+                    if exist(DIR.nods)==7 %do nothing
+                    else mkdir(DIR.nods)
                     end
-                    save([DIR.fx 'sub-' subject_code '_task-' task '_acq-' num2str(r) '_onsets.mat'], 'names', 'onsets', 'durations') %Note that NODs files should be distinguished by acq number, NOT run number
+                    save([DIR.nods 'sub-' subject_code '_task-' task '_acq-' num2str(r) '_onsets.mat'], 'names', 'onsets', 'durations') %Note that NODs files should be distinguished by acq number, NOT run number
                 end
             end
         end
