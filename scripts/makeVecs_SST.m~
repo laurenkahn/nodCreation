@@ -25,9 +25,9 @@ standardNames = {'CorrectGo' 'CorrectStop' 'FailedStop' 'Cue' 'FailedGo'};
 standardCondsPerRun = length(standardNames);
 
 % Import sub x cond matrix specifying removed conditions
-DIR.condsRemoved = '~/Desktop/flexibleConCreation/conInfo/'; % CHANGE THIS
+DIR.condsRemoved = [DIR.dataRepo filesep 'info/']; 
 condsRemovedFile = [DIR.condsRemoved filesep 'condsRemoved_' task '_' analysis '.txt'];
-DIR.runsRemoved = [DIR.dataRepo '/info/'];
+DIR.runsRemoved = [DIR.dataRepo filesep 'info/'];
 runsRemovedFile = [DIR.runsRemoved filesep 'runsRemoved_' task '_' analysis '.txt'];
 
 runsRemovedMat = dlmread(runsRemovedFile,'\t');
@@ -46,7 +46,7 @@ leftButton=91;
 rightButton=94;
 
 % Specify where the systematicWrongButtons file lives:
-buttonRuleExceptions = dlmread([DIR.dataRepo '/info/systematicWrongButtons.txt'],'\t');
+buttonRuleExceptions = dlmread([DIR.dataRepo '/info/systematicWrongButtons_' task '.txt'],'\t');
 
 % Some versions of the SST set up the Seeker variable differently.
 % The script should tell you which columns are which and what different
@@ -81,6 +81,10 @@ else
         subjectCode = [studyCode placeholder num2str(s)];
         
         for r=runs % For runs defined previously (scanning only here)
+            rIdx = find(runs==r); % Sometimes we want r=13, sometimes we want rIdx=3.
+             if runsRemovedMat(s,r) % if this run is the exclusion list
+                sprintf('sub %d run %d excluded',s,r)
+            else
             dataFile = [DIR.data filesep studyCode '_sub' num2str(s) '_run' num2str(r) '.mat'];
             if exist(dataFile)
                 load(dataFile)  % Load .mat
@@ -177,8 +181,8 @@ else
                 durations = durations(~currentCondsRemoved);
                 
                 % Insert list of condsRemoved for this run into condsRemoved variable *LEK
-                startCol = 1 + (r-1)*standardCondsPerRun;
-                endCol = r*standardCondsPerRun;
+                startCol = 1 + (rIdx-1)*standardCondsPerRun;
+                endCol = rIdx*standardCondsPerRun;
                 condsRemoved(s,startCol:endCol) = currentCondsRemoved;
                 
                 DIR.nods = [DIR.dataRepo 'names_onsets_durations/' task filesep analysis filesep];
@@ -188,6 +192,9 @@ else
                 save([DIR.nods 'sub-' subjectCode '_task-sst_acq-' num2str(rIdx) '_onsets.mat'],'names','onsets','durations');
                 
             end % file exists if
+             
+             end
+             
         end % run loop
     end % subject loop
 end % data folder exist check
